@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Process &amp; Utilities Crossword</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --blue-deep:#0c2438;
+    --blue-mid:#123655;
+    --blue-line:#2f5f86;
+    --paper:#f2ede1;
+    --paper-dim:#e7e0d0;
+    --amber:#e4a63c;
+    --amber-dim:#b5822c;
+    --teal:#6fb3ac;
+    --ok:#5f9e6a;
+    --bad:#c1594a;
+    --ink:#0c2438;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--blue-deep),var(--blue-deep)) ,
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 28px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 28px);
+    color:var(--paper);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    padding:18px 14px 60px;
+  }
+  .sheet{
+    max-width:1180px;
+    margin:0 auto;
+    border:1px solid var(--blue-line);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+    position:relative;
+  }
+  .titleblock{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:16px;
+    padding:20px 22px 14px;
+    border-bottom:2px solid var(--amber);
+  }
+  .titleblock h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(22px,3.4vw,34px);
+    letter-spacing:0.5px;
+    margin:0 0 4px;
+    color:var(--paper);
+  }
+  .titleblock .sub{
+    font-size:12px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--teal);
+  }
+  .stampbox{
+    border:1px solid var(--blue-line);
+    padding:8px 12px;
+    font-size:10.5px;
+    line-height:1.6;
+    color:var(--teal);
+    text-align:right;
+    white-space:nowrap;
+  }
+  .stampbox b{color:var(--amber);}
+  .layout{
+    display:flex;
+    gap:0;
+    align-items:stretch;
+  }
+  @media (max-width:900px){
+    .layout{flex-direction:column;}
+  }
+  .grid-panel{
+    flex:1 1 62%;
+    padding:18px;
+    border-right:1px solid var(--blue-line);
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  @media (max-width:900px){
+    .grid-panel{border-right:none;border-bottom:1px solid var(--blue-line);}
+  }
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .toolbar-left{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn{
+    background:transparent;
+    border:1px solid var(--blue-line);
+    color:var(--paper);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    padding:7px 12px;
+    cursor:pointer;
+    transition:all .12s ease;
+  }
+  .btn:hover{border-color:var(--amber); color:var(--amber);}
+  .btn.primary{border-color:var(--amber); color:var(--amber);}
+  .btn.primary:hover{background:var(--amber); color:var(--blue-deep);}
+  .zoomctl{display:flex; align-items:center; gap:6px;}
+  .zoomctl button{width:26px;height:26px;padding:0;}
+  .progress-line{
+    font-size:11px;
+    color:var(--teal);
+    letter-spacing:1px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .progress-bar{
+    height:4px;
+    background:var(--blue-mid);
+    flex:1;
+    margin:0 10px;
+    position:relative;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--amber);
+    width:0%;
+    transition:width .25s ease;
+  }
+  .grid-scroll{
+    overflow:auto;
+    border:1px solid var(--blue-line);
+    background:var(--blue-mid);
+    max-height:64vh;
+    padding:14px;
+  }
+  #grid{
+    display:grid;
+    gap:1px;
+    background:var(--blue-line);
+    width:max-content;
+  }
+  .cell{
+    width:var(--cs);
+    height:var(--cs);
+    background:transparent;
+    position:relative;
+  }
+  .cell.blocked{background:transparent;}
+  .cell.filled{background:var(--paper);}
+  .cell input{
+    width:100%;
+    height:100%;
+    border:none;
+    outline:none;
+    background:transparent;
+    text-align:center;
+    text-transform:uppercase;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:calc(var(--cs) * 0.5);
+    color:var(--ink);
+    caret-color:transparent;
+    padding:0;
+  }
+  .cell .num{
+    position:absolute;
+    top:0px; left:2px;
+    font-size:calc(var(--cs) * 0.26);
+    color:var(--blue-mid);
+    font-weight:600;
+    pointer-events:none;
+    line-height:1;
+  }
+  .cell.active input{background:var(--amber);}
+  .cell.inword input{background:#f7e2b4;}
+  .cell.correct input{background:#cfe6cf;}
+  .cell.incorrect input{background:#f0c7c0;}
+  .clue-panel{
+    flex:1 1 38%;
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+  .active-clue{
+    border:1px solid var(--amber);
+    padding:10px 12px;
+    margin-bottom:12px;
+    font-size:13px;
+    line-height:1.5;
+    min-height:52px;
+  }
+  .active-clue .num{color:var(--amber); font-weight:700; margin-right:6px;}
+  .active-clue .dirtag{
+    float:right;
+    font-size:10px;
+    letter-spacing:1px;
+    color:var(--teal);
+    border:1px solid var(--teal);
+    padding:1px 6px;
+  }
+  .clue-columns{
+    display:flex;
+    gap:14px;
+    flex:1;
+    min-height:0;
+  }
+  .clue-col{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .clue-col h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px;
+    letter-spacing:2px;
+    color:var(--amber);
+    text-transform:uppercase;
+    margin:0 0 8px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--blue-line);
+  }
+  .clue-list{
+    overflow-y:auto;
+    max-height:52vh;
+    padding-right:4px;
+  }
+  .clue-item{
+    font-size:12px;
+    line-height:1.4;
+    padding:6px 6px;
+    cursor:pointer;
+    display:flex;
+    gap:6px;
+    border-left:2px solid transparent;
+  }
+  .clue-item:hover{background:rgba(255,255,255,0.05);}
+  .clue-item.active{
+    border-left:2px solid var(--amber);
+    background:rgba(228,166,60,0.12);
+    color:var(--amber);
+  }
+  .clue-item.done{color:var(--teal); opacity:.65;}
+  .clue-item .n{min-width:22px; opacity:.7;}
+  .clue-list::-webkit-scrollbar, .grid-scroll::-webkit-scrollbar{width:8px; height:8px;}
+  .clue-list::-webkit-scrollbar-thumb, .grid-scroll::-webkit-scrollbar-thumb{background:var(--blue-line);}
+  .footer-note{
+    padding:10px 22px 16px;
+    font-size:10.5px;
+    color:var(--teal);
+    letter-spacing:1px;
+    display:flex;
+    justify-content:space-between;
+    border-top:1px solid var(--blue-line);
+  }
+  .win-banner{
+    display:none;
+    margin:0 22px 16px;
+    padding:12px 16px;
+    border:1px solid var(--ok);
+    color:#bfe3c4;
+    font-size:13px;
+    letter-spacing:1px;
+    text-align:center;
+  }
+  .win-banner.show{display:block;}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="titleblock">
+    <div>
+      <div class="sub">Haskell &middot; Process Systems &amp; Utilities</div>
+      <h1>Onboarding Crossword</h1>
+    </div>
+    <div class="stampbox">
+      DWG NO. <b>PSU-001</b><br>
+      SCALE <b>NTS</b><br>
+      ITEMS <b id="stamp-count">66</b>
+    </div>
+  </div>
+
+  <div class="win-banner" id="winBanner">ALL CLEAR &mdash; PUZZLE COMPLETE. NICE WORK.</div>
+
+  <div class="layout">
+    <div class="grid-panel">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="btn" id="btnCheck">Check Word</button>
+          <button class="btn" id="btnCheckAll">Check All</button>
+          <button class="btn" id="btnReveal">Reveal Word</button>
+          <button class="btn" id="btnClear">Clear All</button>
+        </div>
+        <div class="zoomctl">
+          <button class="btn" id="zoomOut">&minus;</button>
+          <span style="font-size:11px; color:var(--teal);">ZOOM</span>
+          <button class="btn" id="zoomIn">+</button>
+        </div>
+      </div>
+      <div class="progress-line">
+        <span>PROGRESS</span>
+        <div class="progress-bar"><div class="progress-fill" id="progFill"></div></div>
+        <span id="progText">0 / 66</span>
+      </div>
+      <div class="grid-scroll" id="gridScroll">
+        <div id="grid"></div>
+      </div>
+    </div>
+
+    <div class="clue-panel">
+      <div class="active-clue" id="activeClue">Select a cell to begin.</div>
+      <div class="clue-columns">
+        <div class="clue-col">
+          <h3>Across</h3>
+          <div class="clue-list" id="acrossList"></div>
+        </div>
+        <div class="clue-col">
+          <h3>Down</h3>
+          <div class="clue-list" id="downList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span>PROCESS ENGINEERING &middot; PUMPS &middot; VALVES &middot; UTILITIES &middot; DAIRY &amp; BEVERAGE</span>
+    <span>REV. A</span>
+  </div>
+</div>
+
+<script id="puzzle-data" type="application/json">{"rows":39,"cols":35,"cells":[[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,{"letter":"O","number":1,"words":[{"id":36,"dir":"D","index":0}]},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,{"letter":"R","number":2,"words":[{"id":36,"dir":"D","index":1},{"id":38,"dir":"A","index":0}]},{"letter":"E","number":null,"words":[{"id":38,"dir":"A","index":1}]},{"letter":"N","number":null,"words":[{"id":38,"dir":"A","index":2}]},{"letter":"N","number":null,"words":[{"id":38,"dir":"A","index":3}]},{"letter":"E","number":null,"words":[{"id":38,"dir":"A","index":4}]},{"letter":"T","number":null,"words":[{"id":38,"dir":"A","index":5}]},null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,{"letter":"I","number":null,"words":[{"id":36,"dir":"D","index":2}]},null,null,null,null,null,null,null,null,null,null,{"letter":"P","number":3,"words":[{"id":54,"dir":"D","index":0}]},null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,{"letter":"F","number":null,"words":[{"id":36,"dir":"D","index":3}]},null,null,null,null,null,null,null,null,null,null,{"letter":"R","number":null,"words":[{"id":54,"dir":"D","index":1}]},null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,{"letter":"A","number":4,"words":[{"id":39,"dir":"A","index":0}]},{"letter":"M","number":null,"words":[{"id":39,"dir":"A","index":1}]},{"letter":"M","number":null,"words":[{"id":39,"dir":"A","index":2}]},{"letter":"O","number":null,"words":[{"id":39,"dir":"A","index":3}]},{"letter":"N","number":null,"words":[{"id":39,"dir":"A","index":4}]},{"letter":"I","number":null,"words":[{"id":36,"dir":"D","index":4},{"id":39,"dir":"A","index":5}]},{"letter":"A","number":null,"words":[{"id":39,"dir":"A","index":6}]},null,null,null,null,null,null,null,null,null,{"letter":"E","number":null,"words":[{"id":54,"dir":"D","index":2}]},null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,{"letter":"C","number":null,"words":[{"id":36,"dir":"D","index":5}]},null,null,null,null,null,null,null,null,null,null,{"letter":"S","number":null,"words":[{"id":54,"dir":"D","index":3}]},null,null,null,null,null,null,null],[null,null,{"letter":"T","number":5,"words":[{"id":53,"dir":"A","index":0}]},{"letter":"R","number":null,"words":[{"id":53,"dir":"A","index":1}]},{"letter":"I","number":null,"words":[{"id":53,"dir":"A","index":2}]},{"letter":"C","number":null,"words":[{"id":53,"dir":"A","index":3}]},{"letter":"L","number":null,"words":[{"id":53,"dir":"A","index":4}]},{"letter":"A","number":null,"words":[{"id":53,"dir":"A","index":5}]},{"letter":"M","number":null,"words":[{"id":53,"dir":"A","index":6}]},{"letter":"P","number":6,"words":[{"id":30,"dir":"D","index":0},{"id":53,"dir":"A","index":7}]},null,null,{"letter":"A","number":7,"words":[{"id":17,"dir":"A","index":0}]},{"letter":"U","number":null,"words":[{"id":17,"dir":"A","index":1}]},{"letter":"S","number":8,"words":[{"id":16,"dir":"D","index":0},{"id":17,"dir":"A","index":2}]},{"letter":"T","number":null,"words":[{"id":17,"dir":"A","index":3}]},{"letter":"E","number":null,"words":[{"id":17,"dir":"A","index":4},{"id":36,"dir":"D","index":6}]},{"letter":"N","number":null,"words":[{"id":17,"dir":"A","index":5}]},{"letter":"I","number":null,"words":[{"id":17,"dir":"A","index":6}]},{"letter":"T","number":null,"words":[{"id":17,"dir":"A","index":7}]},{"letter":"I","number":null,"words":[{"id":17,"dir":"A","index":8}]},{"letter":"C","number":null,"words":[{"id":17,"dir":"A","index":9}]},null,null,null,null,null,{"letter":"T","number":null,"words":[{"id":54,"dir":"D","index":4}]},null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,{"letter":"A","number":null,"words":[{"id":30,"dir":"D","index":1}]},null,{"letter":"S","number":9,"words":[{"id":23,"dir":"D","index":0}]},null,null,{"letter":"P","number":null,"words":[{"id":16,"dir":"D","index":1}]},null,null,null,null,null,null,null,null,null,null,{"letter":"E","number":10,"words":[{"id":25,"dir":"D","index":0}]},null,{"letter":"O","number":null,"words":[{"id":54,"dir":"D","index":5}]},null,null,null,null,null,null,null],[null,{"letter":"F","number":11,"words":[{"id":42,"dir":"A","index":0}]},{"letter":"L","number":null,"words":[{"id":42,"dir":"A","index":1}]},{"letter":"A","number":null,"words":[{"id":42,"dir":"A","index":2}]},{"letter":"T","number":null,"words":[{"id":42,"dir":"A","index":3}]},{"letter":"O","number":null,"words":[{"id":42,"dir":"A","index":4}]},{"letter":"N","number":null,"words":[{"id":42,"dir":"A","index":5}]},{"letter":"T","number":null,"words":[{"id":42,"dir":"A","index":6}]},{"letter":"O","number":null,"words":[{"id":42,"dir":"A","index":7}]},{"letter":"P","number":null,"words":[{"id":30,"dir":"D","index":2},{"id":42,"dir":"A","index":8}]},null,{"letter":"T","number":null,"words":[{"id":23,"dir":"D","index":1}]},null,{"letter":"S","number":12,"words":[{"id":20,"dir":"A","index":0}]},{"letter":"E","number":null,"words":[{"id":16,"dir":"D","index":2},{"id":20,"dir":"A","index":1}]},{"letter":"I","number":null,"words":[{"id":20,"dir":"A","index":2}]},{"letter":"B","number":null,"words":[{"id":20,"dir":"A","index":3}]},{"letter":"E","number":null,"words":[{"id":20,"dir":"A","index":4}]},{"letter":"R","number":null,"words":[{"id":20,"dir":"A","index":5}]},{"letter":"L","number":null,"words":[{"id":20,"dir":"A","index":6}]},{"letter":"I","number":null,"words":[{"id":20,"dir":"A","index":7}]},{"letter":"N","number":null,"words":[{"id":20,"dir":"A","index":8}]},{"letter":"G","number":null,"words":[{"id":20,"dir":"A","index":9}]},null,{"letter":"F","number":13,"words":[{"id":41,"dir":"A","index":0}]},{"letter":"U","number":null,"words":[{"id":25,"dir":"D","index":1},{"id":41,"dir":"A","index":1}]},{"letter":"N","number":null,"words":[{"id":41,"dir":"A","index":2}]},{"letter":"N","number":null,"words":[{"id":41,"dir":"A","index":3},{"id":54,"dir":"D","index":6}]},{"letter":"E","number":null,"words":[{"id":41,"dir":"A","index":4}]},{"letter":"L","number":null,"words":[{"id":41,"dir":"A","index":5}]},{"letter":"S","number":null,"words":[{"id":41,"dir":"A","index":6}]},null,null,null,null],[null,null,null,null,null,null,null,null,null,{"letter":"E","number":null,"words":[{"id":30,"dir":"D","index":3}]},null,{"letter":"E","number":null,"words":[{"id":23,"dir":"D","index":2}]},null,null,{"letter":"C","number":null,"words":[{"id":16,"dir":"D","index":3}]},null,null,null,null,null,null,null,null,null,null,{"letter":"T","number":null,"words":[{"id":25,"dir":"D","index":2}]},null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,{"letter":"V","number":14,"words":[{"id":65,"dir":"D","index":0}]},null,{"letter":"R","number":null,"words":[{"id":30,"dir":"D","index":4}]},null,{"letter":"A","number":null,"words":[{"id":23,"dir":"D","index":3}]},null,null,{"letter":"I","number":null,"words":[{"id":16,"dir":"D","index":4}]},null,{"letter":"B","number":15,"words":[{"id":13,"dir":"A","index":0}]},{"letter":"O","number":null,"words":[{"id":13,"dir":"A","index":1}]},{"letter":"L","number":16,"words":[{"id":9,"dir":"D","index":0},{"id":13,"dir":"A","index":2}]},{"letter":"D","number":null,"words":[{"id":13,"dir":"A","index":3}]},{"letter":"S","number":null,"words":[{"id":13,"dir":"A","index":4}]},{"letter":"A","number":null,"words":[{"id":13,"dir":"A","index":5}]},{"letter":"N","number":null,"words":[{"id":13,"dir":"A","index":6}]},{"letter":"S","number":null,"words":[{"id":13,"dir":"A","index":7}]},{"letter":"S","number":null,"words":[{"id":13,"dir":"A","index":8}]},{"letter":"E","number":null,"words":[{"id":13,"dir":"A","index":9},{"id":25,"dir":"D","index":3}]},{"letter":"R","number":null,"words":[{"id":13,"dir":"A","index":10}]},{"letter":"I","number":null,"words":[{"id":13,"dir":"A","index":11}]},{"letter":"F","number":null,"words":[{"id":13,"dir":"A","index":12}]},null,null,null,null,null,null],[null,null,null,{"letter":"J","number":17,"words":[{"id":35,"dir":"D","index":0}]},null,null,null,{"letter":"F","number":null,"words":[{"id":65,"dir":"D","index":1}]},null,{"letter":"D","number":null,"words":[{"id":30,"dir":"D","index":5}]},null,{"letter":"M","number":null,"words":[{"id":23,"dir":"D","index":4}]},null,null,{"letter":"F","number":null,"words":[{"id":16,"dir":"D","index":5}]},null,null,null,{"letter":"E","number":null,"words":[{"id":9,"dir":"D","index":1}]},null,null,null,null,null,null,{"letter":"C","number":null,"words":[{"id":25,"dir":"D","index":4}]},null,null,null,null,null,null,null,null,null],[null,{"letter":"S","number":18,"words":[{"id":40,"dir":"D","index":0}]},null,{"letter":"O","number":null,"words":[{"id":35,"dir":"D","index":1}]},null,{"letter":"H","number":19,"words":[{"id":18,"dir":"A","index":0}]},{"letter":"Y","number":null,"words":[{"id":18,"dir":"A","index":1}]},{"letter":"D","number":null,"words":[{"id":18,"dir":"A","index":2},{"id":65,"dir":"D","index":2}]},{"letter":"R","number":null,"words":[{"id":18,"dir":"A","index":3}]},{"letter":"O","number":null,"words":[{"id":18,"dir":"A","index":4},{"id":30,"dir":"D","index":6}]},{"letter":"S","number":null,"words":[{"id":18,"dir":"A","index":5}]},{"letter":"T","number":null,"words":[{"id":18,"dir":"A","index":6},{"id":23,"dir":"D","index":5}]},{"letter":"A","number":null,"words":[{"id":18,"dir":"A","index":7}]},{"letter":"T","number":null,"words":[{"id":18,"dir":"A","index":8}]},{"letter":"I","number":null,"words":[{"id":16,"dir":"D","index":6},{"id":18,"dir":"A","index":9}]},{"letter":"C","number":null,"words":[{"id":18,"dir":"A","index":10}]},null,null,{"letter":"G","number":null,"words":[{"id":9,"dir":"D","index":2}]},null,null,null,null,null,null,{"letter":"T","number":null,"words":[{"id":25,"dir":"D","index":5}]},null,null,null,null,null,null,null,null,null],[null,{"letter":"P","number":null,"words":[{"id":40,"dir":"D","index":1}]},null,{"letter":"H","number":null,"words":[{"id":35,"dir":"D","index":2}]},null,null,null,null,null,{"letter":"L","number":null,"words":[{"id":30,"dir":"D","index":7}]},null,{"letter":"R","number":null,"words":[{"id":23,"dir":"D","index":6}]},null,null,{"letter":"C","number":null,"words":[{"id":16,"dir":"D","index":7}]},null,null,{"letter":"P","number":20,"words":[{"id":10,"dir":"A","index":0}]},{"letter":"A","number":null,"words":[{"id":9,"dir":"D","index":3},{"id":10,"dir":"A","index":1}]},{"letter":"S","number":null,"words":[{"id":10,"dir":"A","index":2}]},{"letter":"S","number":null,"words":[{"id":10,"dir":"A","index":3}]},{"letter":"I","number":null,"words":[{"id":10,"dir":"A","index":4}]},{"letter":"V","number":null,"words":[{"id":10,"dir":"A","index":5}]},{"letter":"A","number":null,"words":[{"id":10,"dir":"A","index":6}]},{"letter":"T","number":null,"words":[{"id":10,"dir":"A","index":7}]},{"letter":"I","number":null,"words":[{"id":10,"dir":"A","index":8},{"id":25,"dir":"D","index":6}]},{"letter":"O","number":null,"words":[{"id":10,"dir":"A","index":9}]},{"letter":"N","number":null,"words":[{"id":10,"dir":"A","index":10}]},null,null,null,null,null,null,null],[null,{"letter":"A","number":21,"words":[{"id":40,"dir":"D","index":2},{"id":48,"dir":"A","index":0}]},{"letter":"N","number":null,"words":[{"id":48,"dir":"A","index":1}]},{"letter":"N","number":null,"words":[{"id":35,"dir":"D","index":3},{"id":48,"dir":"A","index":2}]},{"letter":"A","number":null,"words":[{"id":48,"dir":"A","index":3}]},{"letter":"T","number":null,"words":[{"id":48,"dir":"A","index":4}]},{"letter":"T","number":null,"words":[{"id":48,"dir":"A","index":5}]},{"letter":"O","number":null,"words":[{"id":48,"dir":"A","index":6}]},null,{"letter":"L","number":null,"words":[{"id":30,"dir":"D","index":8}]},null,{"letter":"A","number":null,"words":[{"id":23,"dir":"D","index":7}]},null,null,{"letter":"H","number":null,"words":[{"id":16,"dir":"D","index":8}]},null,{"letter":"Y","number":22,"words":[{"id":57,"dir":"D","index":0}]},null,{"letter":"L","number":null,"words":[{"id":9,"dir":"D","index":4}]},null,null,null,null,null,null,{"letter":"C","number":null,"words":[{"id":25,"dir":"D","index":7}]},null,null,null,{"letter":"R","number":23,"words":[{"id":52,"dir":"A","index":0}]},{"letter":"O","number":null,"words":[{"id":52,"dir":"A","index":1}]},{"letter":"L","number":null,"words":[{"id":52,"dir":"A","index":2}]},{"letter":"L","number":24,"words":[{"id":46,"dir":"D","index":0},{"id":52,"dir":"A","index":3}]},{"letter":"E","number":null,"words":[{"id":52,"dir":"A","index":4}]},{"letter":"R","number":null,"words":[{"id":52,"dir":"A","index":5}]}],[null,{"letter":"R","number":null,"words":[{"id":40,"dir":"D","index":3}]},null,{"letter":"P","number":null,"words":[{"id":35,"dir":"D","index":4}]},null,null,null,null,null,{"letter":"S","number":null,"words":[{"id":30,"dir":"D","index":9}]},null,{"letter":"P","number":null,"words":[{"id":23,"dir":"D","index":8}]},null,null,{"letter":"E","number":null,"words":[{"id":16,"dir":"D","index":9}]},null,{"letter":"O","number":null,"words":[{"id":57,"dir":"D","index":1}]},null,{"letter":"H","number":null,"words":[{"id":9,"dir":"D","index":5}]},null,null,null,null,null,null,null,{"letter":"R","number":25,"words":[{"id":55,"dir":"D","index":0}]},null,null,null,null,null,{"letter":"I","number":null,"words":[{"id":46,"dir":"D","index":1}]},null,null],[null,{"letter":"G","number":null,"words":[{"id":40,"dir":"D","index":4}]},null,{"letter":"E","number":null,"words":[{"id":35,"dir":"D","index":5}]},null,null,null,{"letter":"A","number":26,"words":[{"id":14,"dir":"D","index":0}]},null,null,null,{"letter":"S","number":null,"words":[{"id":23,"dir":"D","index":9}]},null,{"letter":"J","number":27,"words":[{"id":11,"dir":"A","index":0}]},{"letter":"A","number":null,"words":[{"id":11,"dir":"A","index":1},{"id":16,"dir":"D","index":10}]},{"letter":"C","number":null,"words":[{"id":11,"dir":"A","index":2}]},{"letter":"K","number":null,"words":[{"id":11,"dir":"A","index":3},{"id":57,"dir":"D","index":2}]},{"letter":"S","number":null,"words":[{"id":11,"dir":"A","index":4}]},{"letter":"O","number":null,"words":[{"id":9,"dir":"D","index":6},{"id":11,"dir":"A","index":5}]},{"letter":"N","number":null,"words":[{"id":11,"dir":"A","index":6}]},{"letter":"V","number":null,"words":[{"id":11,"dir":"A","index":7}]},{"letter":"I","number":null,"words":[{"id":11,"dir":"A","index":8}]},{"letter":"L","number":null,"words":[{"id":11,"dir":"A","index":9}]},{"letter":"L","number":null,"words":[{"id":11,"dir":"A","index":10}]},{"letter":"E","number":null,"words":[{"id":11,"dir":"A","index":11}]},null,{"letter":"E","number":28,"words":[{"id":55,"dir":"D","index":1},{"id":60,"dir":"A","index":0}]},{"letter":"P","number":null,"words":[{"id":60,"dir":"A","index":1}]},{"letter":"D","number":null,"words":[{"id":60,"dir":"A","index":2}]},{"letter":"M","number":null,"words":[{"id":60,"dir":"A","index":3}]},null,null,{"letter":"P","number":null,"words":[{"id":46,"dir":"D","index":2}]},null,{"letter":"D","number":29,"words":[{"id":44,"dir":"D","index":0}]}],[{"letter":"P","number":30,"words":[{"id":31,"dir":"A","index":0}]},{"letter":"E","number":null,"words":[{"id":31,"dir":"A","index":1},{"id":40,"dir":"D","index":5}]},{"letter":"T","number":null,"words":[{"id":31,"dir":"A","index":2}]},{"letter":"R","number":null,"words":[{"id":31,"dir":"A","index":3},{"id":35,"dir":"D","index":6}]},{"letter":"O","number":null,"words":[{"id":31,"dir":"A","index":4}]},{"letter":"L","number":null,"words":[{"id":31,"dir":"A","index":5}]},{"letter":"E","number":null,"words":[{"id":31,"dir":"A","index":6}]},{"letter":"U","number":null,"words":[{"id":14,"dir":"D","index":1},{"id":31,"dir":"A","index":7}]},{"letter":"M","number":null,"words":[{"id":31,"dir":"A","index":8}]},null,null,null,null,null,{"letter":"T","number":null,"words":[{"id":16,"dir":"D","index":11}]},null,{"letter":"E","number":null,"words":[{"id":57,"dir":"D","index":3}]},null,{"letter":"L","number":null,"words":[{"id":9,"dir":"D","index":7}]},null,null,null,null,null,null,null,{"letter":"G","number":null,"words":[{"id":55,"dir":"D","index":2}]},null,null,null,null,null,{"letter":"A","number":null,"words":[{"id":46,"dir":"D","index":3}]},null,{"letter":"Y","number":null,"words":[{"id":44,"dir":"D","index":1}]}],[null,{"letter":"R","number":null,"words":[{"id":40,"dir":"D","index":6}]},null,{"letter":"R","number":null,"words":[{"id":35,"dir":"D","index":7}]},null,null,null,{"letter":"D","number":null,"words":[{"id":14,"dir":"D","index":2}]},null,{"letter":"F","number":31,"words":[{"id":56,"dir":"A","index":0}]},{"letter":"A","number":null,"words":[{"id":56,"dir":"A","index":1}]},{"letter":"T","number":null,"words":[{"id":56,"dir":"A","index":2}]},{"letter":"S","number":32,"words":[{"id":3,"dir":"D","index":0},{"id":56,"dir":"A","index":3}]},null,null,{"letter":"B","number":33,"words":[{"id":1,"dir":"D","index":0}]},null,null,{"letter":"D","number":34,"words":[{"id":9,"dir":"D","index":8},{"id":12,"dir":"A","index":0}]},{"letter":"O","number":null,"words":[{"id":12,"dir":"A","index":1}]},{"letter":"O","number":null,"words":[{"id":12,"dir":"A","index":2}]},{"letter":"R","number":null,"words":[{"id":12,"dir":"A","index":3}]},{"letter":"F","number":null,"words":[{"id":12,"dir":"A","index":4}]},{"letter":"O","number":null,"words":[{"id":12,"dir":"A","index":5}]},{"letter":"A","number":null,"words":[{"id":12,"dir":"A","index":6}]},{"letter":"M","number":null,"words":[{"id":12,"dir":"A","index":7}]},{"letter":"E","number":null,"words":[{"id":12,"dir":"A","index":8},{"id":55,"dir":"D","index":3}]},{"letter":"R","number":null,"words":[{"id":12,"dir":"A","index":9}]},null,null,{"letter":"S","number":35,"words":[{"id":22,"dir":"D","index":0}]},null,{"letter":"S","number":null,"words":[{"id":46,"dir":"D","index":4}]},null,{"letter":"S","number":null,"words":[{"id":44,"dir":"D","index":2}]}],[null,null,null,{"letter":"Y","number":null,"words":[{"id":35,"dir":"D","index":8}]},null,null,null,{"letter":"I","number":null,"words":[{"id":14,"dir":"D","index":3}]},null,null,null,null,{"letter":"T","number":null,"words":[{"id":3,"dir":"D","index":1}]},null,null,{"letter":"I","number":null,"words":[{"id":1,"dir":"D","index":1}]},null,null,{"letter":"T","number":null,"words":[{"id":9,"dir":"D","index":9}]},null,null,null,null,null,null,null,{"letter":"N","number":null,"words":[{"id":55,"dir":"D","index":4}]},null,null,{"letter":"L","number":36,"words":[{"id":43,"dir":"A","index":0}]},{"letter":"I","number":null,"words":[{"id":22,"dir":"D","index":1},{"id":43,"dir":"A","index":1}]},{"letter":"N","number":null,"words":[{"id":43,"dir":"A","index":2}]},{"letter":"E","number":null,"words":[{"id":43,"dir":"A","index":3},{"id":46,"dir":"D","index":5}]},{"letter":"A","number":null,"words":[{"id":43,"dir":"A","index":4}]},{"letter":"R","number":null,"words":[{"id":43,"dir":"A","index":5},{"id":44,"dir":"D","index":3}]}],[null,null,{"letter":"H","number":37,"words":[{"id":28,"dir":"D","index":0}]},null,{"letter":"E","number":38,"words":[{"id":27,"dir":"D","index":0}]},null,null,{"letter":"T","number":39,"words":[{"id":0,"dir":"A","index":0},{"id":14,"dir":"D","index":4}]},{"letter":"H","number":null,"words":[{"id":0,"dir":"A","index":1}]},{"letter":"E","number":40,"words":[{"id":0,"dir":"A","index":2},{"id":6,"dir":"D","index":0}]},{"letter":"R","number":null,"words":[{"id":0,"dir":"A","index":3}]},{"letter":"M","number":null,"words":[{"id":0,"dir":"A","index":4}]},{"letter":"A","number":null,"words":[{"id":0,"dir":"A","index":5},{"id":3,"dir":"D","index":2}]},{"letter":"L","number":null,"words":[{"id":0,"dir":"A","index":6}]},{"letter":"C","number":null,"words":[{"id":0,"dir":"A","index":7}]},{"letter":"O","number":null,"words":[{"id":0,"dir":"A","index":8},{"id":1,"dir":"D","index":2}]},{"letter":"N","number":null,"words":[{"id":0,"dir":"A","index":9}]},{"letter":"D","number":null,"words":[{"id":0,"dir":"A","index":10}]},{"letter":"U","number":null,"words":[{"id":0,"dir":"A","index":11},{"id":9,"dir":"D","index":10}]},{"letter":"C","number":null,"words":[{"id":0,"dir":"A","index":12}]},{"letter":"T","number":null,"words":[{"id":0,"dir":"A","index":13}]},{"letter":"I","number":null,"words":[{"id":0,"dir":"A","index":14}]},{"letter":"V","number":null,"words":[{"id":0,"dir":"A","index":15}]},{"letter":"I","number":null,"words":[{"id":0,"dir":"A","index":16}]},{"letter":"T","number":null,"words":[{"id":0,"dir":"A","index":17}]},{"letter":"Y","number":null,"words":[{"id":0,"dir":"A","index":18}]},null,null,{"letter":"I","number":41,"words":[{"id":19,"dir":"D","index":0}]},null,{"letter":"G","number":null,"words":[{"id":22,"dir":"D","index":2}]},null,{"letter":"S","number":null,"words":[{"id":46,"dir":"D","index":6}]},null,{"letter":"U","number":null,"words":[{"id":44,"dir":"D","index":4}]}],[{"letter":"A","number":42,"words":[{"id":29,"dir":"D","index":0}]},null,{"letter":"E","number":null,"words":[{"id":28,"dir":"D","index":1}]},null,{"letter":"L","number":null,"words":[{"id":27,"dir":"D","index":1}]},null,null,{"letter":"B","number":null,"words":[{"id":14,"dir":"D","index":5}]},null,{"letter":"T","number":null,"words":[{"id":6,"dir":"D","index":1}]},null,null,{"letter":"N","number":null,"words":[{"id":3,"dir":"D","index":3}]},null,null,{"letter":"P","number":null,"words":[{"id":1,"dir":"D","index":3}]},null,null,{"letter":"B","number":null,"words":[{"id":9,"dir":"D","index":11}]},null,null,null,null,null,null,null,null,null,{"letter":"N","number":null,"words":[{"id":19,"dir":"D","index":1}]},null,{"letter":"H","number":null,"words":[{"id":22,"dir":"D","index":3}]},null,null,null,{"letter":"P","number":null,"words":[{"id":44,"dir":"D","index":5}]}],[{"letter":"L","number":null,"words":[{"id":29,"dir":"D","index":1}]},null,{"letter":"A","number":null,"words":[{"id":28,"dir":"D","index":2}]},null,{"letter":"E","number":null,"words":[{"id":27,"dir":"D","index":2}]},null,null,{"letter":"O","number":null,"words":[{"id":14,"dir":"D","index":6}]},null,{"letter":"H","number":null,"words":[{"id":6,"dir":"D","index":2}]},null,null,{"letter":"D","number":null,"words":[{"id":3,"dir":"D","index":4}]},null,null,{"letter":"H","number":null,"words":[{"id":1,"dir":"D","index":4}]},null,null,{"letter":"E","number":null,"words":[{"id":9,"dir":"D","index":12}]},null,null,null,null,{"letter":"V","number":43,"words":[{"id":21,"dir":"A","index":0}]},{"letter":"I","number":null,"words":[{"id":21,"dir":"A","index":1}]},{"letter":"S","number":null,"words":[{"id":21,"dir":"A","index":2}]},{"letter":"C","number":null,"words":[{"id":21,"dir":"A","index":3}]},{"letter":"O","number":null,"words":[{"id":21,"dir":"A","index":4}]},{"letter":"S","number":null,"words":[{"id":19,"dir":"D","index":2},{"id":21,"dir":"A","index":5}]},{"letter":"I","number":null,"words":[{"id":21,"dir":"A","index":6}]},{"letter":"T","number":null,"words":[{"id":21,"dir":"A","index":7},{"id":22,"dir":"D","index":4}]},{"letter":"Y","number":null,"words":[{"id":21,"dir":"A","index":8}]},null,null,{"letter":"T","number":null,"words":[{"id":44,"dir":"D","index":6}]}],[{"letter":"F","number":null,"words":[{"id":29,"dir":"D","index":2}]},null,{"letter":"T","number":null,"words":[{"id":28,"dir":"D","index":3}]},null,{"letter":"V","number":null,"words":[{"id":27,"dir":"D","index":3}]},null,null,{"letter":"A","number":null,"words":[{"id":14,"dir":"D","index":7}]},null,{"letter":"Y","number":null,"words":[{"id":6,"dir":"D","index":3}]},null,null,{"letter":"A","number":null,"words":[{"id":3,"dir":"D","index":5}]},null,null,{"letter":"A","number":null,"words":[{"id":1,"dir":"D","index":5}]},null,{"letter":"S","number":44,"words":[{"id":5,"dir":"D","index":0}]},null,null,{"letter":"V","number":45,"words":[{"id":4,"dir":"D","index":0}]},null,{"letter":"P","number":46,"words":[{"id":8,"dir":"D","index":0}]},null,null,null,null,null,{"letter":"U","number":null,"words":[{"id":19,"dir":"D","index":3}]},null,{"letter":"G","number":null,"words":[{"id":22,"dir":"D","index":5}]},null,null,null,{"letter":"E","number":null,"words":[{"id":44,"dir":"D","index":7}]}],[{"letter":"A","number":47,"words":[{"id":26,"dir":"A","index":0},{"id":29,"dir":"D","index":3}]},{"letter":"C","number":null,"words":[{"id":26,"dir":"A","index":1}]},{"letter":"T","number":null,"words":[{"id":26,"dir":"A","index":2},{"id":28,"dir":"D","index":4}]},{"letter":"U","number":null,"words":[{"id":26,"dir":"A","index":3}]},{"letter":"A","number":null,"words":[{"id":26,"dir":"A","index":4},{"id":27,"dir":"D","index":4}]},{"letter":"T","number":null,"words":[{"id":26,"dir":"A","index":5}]},{"letter":"O","number":null,"words":[{"id":26,"dir":"A","index":6}]},{"letter":"R","number":null,"words":[{"id":14,"dir":"D","index":8},{"id":26,"dir":"A","index":7}]},null,{"letter":"L","number":null,"words":[{"id":6,"dir":"D","index":4}]},null,null,{"letter":"R","number":null,"words":[{"id":3,"dir":"D","index":6}]},null,{"letter":"P","number":48,"words":[{"id":2,"dir":"A","index":0}]},{"letter":"R","number":null,"words":[{"id":1,"dir":"D","index":6},{"id":2,"dir":"A","index":1}]},{"letter":"O","number":null,"words":[{"id":2,"dir":"A","index":2}]},{"letter":"P","number":null,"words":[{"id":2,"dir":"A","index":3},{"id":5,"dir":"D","index":1}]},{"letter":"Y","number":null,"words":[{"id":2,"dir":"A","index":4}]},{"letter":"L","number":null,"words":[{"id":2,"dir":"A","index":5}]},{"letter":"E","number":null,"words":[{"id":2,"dir":"A","index":6},{"id":4,"dir":"D","index":1}]},{"letter":"N","number":null,"words":[{"id":2,"dir":"A","index":7}]},{"letter":"E","number":null,"words":[{"id":2,"dir":"A","index":8},{"id":8,"dir":"D","index":1}]},{"letter":"G","number":null,"words":[{"id":2,"dir":"A","index":9}]},{"letter":"L","number":49,"words":[{"id":2,"dir":"A","index":10},{"id":7,"dir":"D","index":0}]},{"letter":"Y","number":null,"words":[{"id":2,"dir":"A","index":11}]},{"letter":"C","number":50,"words":[{"id":2,"dir":"A","index":12},{"id":15,"dir":"D","index":0}]},{"letter":"O","number":null,"words":[{"id":2,"dir":"A","index":13}]},{"letter":"L","number":null,"words":[{"id":2,"dir":"A","index":14},{"id":19,"dir":"D","index":4}]},null,{"letter":"L","number":null,"words":[{"id":22,"dir":"D","index":6}]},null,null,null,{"letter":"K","number":null,"words":[{"id":44,"dir":"D","index":8}]}],[{"letter":"L","number":null,"words":[{"id":29,"dir":"D","index":4}]},null,{"letter":"R","number":null,"words":[{"id":28,"dir":"D","index":5}]},null,{"letter":"T","number":null,"words":[{"id":27,"dir":"D","index":5}]},null,null,{"letter":"D","number":null,"words":[{"id":14,"dir":"D","index":9}]},null,{"letter":"E","number":null,"words":[{"id":6,"dir":"D","index":5}]},null,null,{"letter":"D","number":null,"words":[{"id":3,"dir":"D","index":7}]},null,null,{"letter":"M","number":null,"words":[{"id":1,"dir":"D","index":7}]},null,{"letter":"R","number":null,"words":[{"id":5,"dir":"D","index":2}]},null,null,{"letter":"R","number":null,"words":[{"id":4,"dir":"D","index":2}]},null,{"letter":"N","number":null,"words":[{"id":8,"dir":"D","index":2}]},null,{"letter":"O","number":null,"words":[{"id":7,"dir":"D","index":1}]},null,{"letter":"E","number":null,"words":[{"id":15,"dir":"D","index":1}]},null,{"letter":"A","number":null,"words":[{"id":19,"dir":"D","index":5}]},null,{"letter":"A","number":null,"words":[{"id":22,"dir":"D","index":7}]},null,null,null,null],[{"letter":"A","number":null,"words":[{"id":29,"dir":"D","index":5}]},null,{"letter":"A","number":null,"words":[{"id":28,"dir":"D","index":6}]},null,{"letter":"O","number":null,"words":[{"id":27,"dir":"D","index":6}]},null,null,null,null,{"letter":"N","number":null,"words":[{"id":6,"dir":"D","index":6}]},null,{"letter":"S","number":51,"words":[{"id":62,"dir":"A","index":0}]},{"letter":"I","number":null,"words":[{"id":3,"dir":"D","index":8},{"id":62,"dir":"A","index":1}]},{"letter":"P","number":null,"words":[{"id":62,"dir":"A","index":2}]},null,{"letter":"A","number":null,"words":[{"id":1,"dir":"D","index":8}]},null,{"letter":"A","number":null,"words":[{"id":5,"dir":"D","index":3}]},null,null,{"letter":"T","number":null,"words":[{"id":4,"dir":"D","index":3}]},null,{"letter":"C","number":null,"words":[{"id":8,"dir":"D","index":3}]},null,{"letter":"O","number":null,"words":[{"id":7,"dir":"D","index":2}]},null,{"letter":"N","number":52,"words":[{"id":15,"dir":"D","index":2},{"id":63,"dir":"A","index":0}]},{"letter":"P","number":null,"words":[{"id":63,"dir":"A","index":1}]},{"letter":"T","number":null,"words":[{"id":19,"dir":"D","index":6},{"id":63,"dir":"A","index":2}]},null,{"letter":"S","number":53,"words":[{"id":22,"dir":"D","index":8},{"id":58,"dir":"A","index":0}]},{"letter":"C","number":null,"words":[{"id":58,"dir":"A","index":1}]},{"letter":"R","number":54,"words":[{"id":58,"dir":"A","index":2},{"id":59,"dir":"D","index":0}]},{"letter":"E","number":null,"words":[{"id":58,"dir":"A","index":3}]},{"letter":"W","number":null,"words":[{"id":58,"dir":"A","index":4}]}],[{"letter":"V","number":null,"words":[{"id":29,"dir":"D","index":6}]},null,{"letter":"C","number":null,"words":[{"id":28,"dir":"D","index":7}]},null,{"letter":"R","number":null,"words":[{"id":27,"dir":"D","index":7}]},null,{"letter":"F","number":55,"words":[{"id":33,"dir":"D","index":0}]},null,null,{"letter":"E","number":null,"words":[{"id":6,"dir":"D","index":7}]},null,null,{"letter":"Z","number":null,"words":[{"id":3,"dir":"D","index":9}]},null,null,{"letter":"C","number":null,"words":[{"id":1,"dir":"D","index":9}]},null,{"letter":"Y","number":null,"words":[{"id":5,"dir":"D","index":4}]},null,null,{"letter":"I","number":null,"words":[{"id":4,"dir":"D","index":4}]},null,{"letter":"I","number":null,"words":[{"id":8,"dir":"D","index":4}]},null,{"letter":"P","number":null,"words":[{"id":7,"dir":"D","index":3}]},null,{"letter":"T","number":null,"words":[{"id":15,"dir":"D","index":3}]},null,{"letter":"I","number":null,"words":[{"id":19,"dir":"D","index":7}]},null,{"letter":"S","number":null,"words":[{"id":22,"dir":"D","index":9}]},null,{"letter":"A","number":null,"words":[{"id":59,"dir":"D","index":1}]},null,null],[{"letter":"A","number":null,"words":[{"id":29,"dir":"D","index":7}]},null,{"letter":"E","number":null,"words":[{"id":28,"dir":"D","index":8}]},null,null,null,{"letter":"L","number":null,"words":[{"id":33,"dir":"D","index":1}]},null,null,{"letter":"G","number":null,"words":[{"id":6,"dir":"D","index":8}]},null,null,{"letter":"A","number":null,"words":[{"id":3,"dir":"D","index":10}]},null,null,{"letter":"E","number":null,"words":[{"id":1,"dir":"D","index":10}]},null,{"letter":"C","number":null,"words":[{"id":5,"dir":"D","index":5}]},null,null,{"letter":"C","number":null,"words":[{"id":4,"dir":"D","index":5}]},null,{"letter":"L","number":null,"words":[{"id":8,"dir":"D","index":5}]},null,{"letter":"E","number":null,"words":[{"id":7,"dir":"D","index":4}]},null,{"letter":"R","number":null,"words":[{"id":15,"dir":"D","index":4}]},null,{"letter":"O","number":null,"words":[{"id":19,"dir":"D","index":8}]},null,{"letter":"E","number":null,"words":[{"id":22,"dir":"D","index":10}]},null,{"letter":"D","number":null,"words":[{"id":59,"dir":"D","index":2}]},null,null],[{"letter":"L","number":null,"words":[{"id":29,"dir":"D","index":8}]},null,{"letter":"D","number":null,"words":[{"id":28,"dir":"D","index":9}]},null,null,{"letter":"D","number":56,"words":[{"id":45,"dir":"A","index":0}]},{"letter":"O","number":null,"words":[{"id":33,"dir":"D","index":2},{"id":45,"dir":"A","index":1}]},{"letter":"U","number":null,"words":[{"id":45,"dir":"A","index":2}]},{"letter":"B","number":null,"words":[{"id":45,"dir":"A","index":3}]},{"letter":"L","number":null,"words":[{"id":6,"dir":"D","index":9},{"id":45,"dir":"A","index":4}]},{"letter":"E","number":null,"words":[{"id":45,"dir":"A","index":5}]},null,{"letter":"T","number":null,"words":[{"id":3,"dir":"D","index":11}]},null,null,{"letter":"U","number":null,"words":[{"id":1,"dir":"D","index":11}]},null,{"letter":"O","number":null,"words":[{"id":5,"dir":"D","index":6}]},null,null,{"letter":"A","number":null,"words":[{"id":4,"dir":"D","index":6}]},null,{"letter":"S","number":null,"words":[{"id":8,"dir":"D","index":6}]},null,{"letter":"D","number":null,"words":[{"id":7,"dir":"D","index":5}]},null,{"letter":"I","number":null,"words":[{"id":15,"dir":"D","index":5}]},null,{"letter":"N","number":null,"words":[{"id":19,"dir":"D","index":9}]},null,{"letter":"S","number":null,"words":[{"id":22,"dir":"D","index":11}]},null,{"letter":"I","number":null,"words":[{"id":59,"dir":"D","index":3}]},null,null],[null,null,null,null,{"letter":"F","number":57,"words":[{"id":50,"dir":"D","index":0}]},null,{"letter":"W","number":null,"words":[{"id":33,"dir":"D","index":3}]},null,null,{"letter":"Y","number":null,"words":[{"id":6,"dir":"D","index":10}]},null,null,{"letter":"I","number":null,"words":[{"id":3,"dir":"D","index":12}]},null,null,{"letter":"T","number":null,"words":[{"id":1,"dir":"D","index":12}]},null,{"letter":"V","number":null,"words":[{"id":5,"dir":"D","index":7}]},null,null,{"letter":"L","number":null,"words":[{"id":4,"dir":"D","index":7}]},null,{"letter":"D","number":null,"words":[{"id":8,"dir":"D","index":7}]},null,{"letter":"H","number":null,"words":[{"id":7,"dir":"D","index":6}]},null,{"letter":"F","number":null,"words":[{"id":15,"dir":"D","index":6}]},null,null,null,null,null,{"letter":"A","number":null,"words":[{"id":59,"dir":"D","index":4}]},null,null],[null,null,null,null,{"letter":"R","number":null,"words":[{"id":50,"dir":"D","index":1}]},null,{"letter":"F","number":null,"words":[{"id":33,"dir":"D","index":4}]},null,null,{"letter":"C","number":null,"words":[{"id":6,"dir":"D","index":11}]},null,null,{"letter":"O","number":null,"words":[{"id":3,"dir":"D","index":13}]},null,null,{"letter":"I","number":null,"words":[{"id":1,"dir":"D","index":13}]},null,{"letter":"E","number":null,"words":[{"id":5,"dir":"D","index":8}]},null,null,{"letter":"T","number":null,"words":[{"id":4,"dir":"D","index":8}]},null,{"letter":"O","number":null,"words":[{"id":8,"dir":"D","index":8}]},null,{"letter":"E","number":58,"words":[{"id":7,"dir":"D","index":7},{"id":34,"dir":"A","index":0}]},{"letter":"D","number":null,"words":[{"id":34,"dir":"A","index":1}]},{"letter":"U","number":null,"words":[{"id":15,"dir":"D","index":7},{"id":34,"dir":"A","index":2}]},{"letter":"C","number":null,"words":[{"id":34,"dir":"A","index":3}]},{"letter":"T","number":null,"words":[{"id":34,"dir":"A","index":4}]},{"letter":"O","number":null,"words":[{"id":34,"dir":"A","index":5}]},{"letter":"R","number":null,"words":[{"id":34,"dir":"A","index":6}]},null,{"letter":"L","number":null,"words":[{"id":59,"dir":"D","index":5}]},null,null],[null,{"letter":"C","number":59,"words":[{"id":32,"dir":"A","index":0},{"id":47,"dir":"D","index":0}]},{"letter":"A","number":null,"words":[{"id":32,"dir":"A","index":1}]},{"letter":"V","number":null,"words":[{"id":32,"dir":"A","index":2}]},{"letter":"I","number":null,"words":[{"id":32,"dir":"A","index":3},{"id":50,"dir":"D","index":2}]},{"letter":"T","number":null,"words":[{"id":32,"dir":"A","index":4}]},{"letter":"A","number":null,"words":[{"id":32,"dir":"A","index":5},{"id":33,"dir":"D","index":5}]},{"letter":"T","number":null,"words":[{"id":32,"dir":"A","index":6}]},{"letter":"I","number":null,"words":[{"id":32,"dir":"A","index":7}]},{"letter":"O","number":null,"words":[{"id":6,"dir":"D","index":12},{"id":32,"dir":"A","index":8}]},{"letter":"N","number":null,"words":[{"id":32,"dir":"A","index":9}]},null,{"letter":"N","number":null,"words":[{"id":3,"dir":"D","index":14}]},null,null,{"letter":"C","number":null,"words":[{"id":1,"dir":"D","index":14}]},null,{"letter":"R","number":null,"words":[{"id":5,"dir":"D","index":9}]},null,null,{"letter":"U","number":null,"words":[{"id":4,"dir":"D","index":9}]},null,{"letter":"W","number":null,"words":[{"id":8,"dir":"D","index":9}]},null,{"letter":"A","number":null,"words":[{"id":7,"dir":"D","index":8}]},null,{"letter":"G","number":null,"words":[{"id":15,"dir":"D","index":8}]},null,null,null,null,null,null,null,null],[null,{"letter":"H","number":null,"words":[{"id":47,"dir":"D","index":1}]},null,null,{"letter":"S","number":null,"words":[{"id":50,"dir":"D","index":3}]},null,{"letter":"C","number":null,"words":[{"id":33,"dir":"D","index":6}]},null,null,{"letter":"L","number":null,"words":[{"id":6,"dir":"D","index":13}]},null,null,null,null,null,{"letter":"A","number":null,"words":[{"id":1,"dir":"D","index":15}]},null,{"letter":"A","number":null,"words":[{"id":5,"dir":"D","index":10}]},null,null,{"letter":"R","number":null,"words":[{"id":4,"dir":"D","index":10}]},null,{"letter":"N","number":null,"words":[{"id":8,"dir":"D","index":10}]},null,{"letter":"D","number":null,"words":[{"id":7,"dir":"D","index":9}]},null,{"letter":"A","number":null,"words":[{"id":15,"dir":"D","index":9}]},null,null,null,null,null,null,null,null],[null,{"letter":"O","number":null,"words":[{"id":47,"dir":"D","index":2}]},null,null,{"letter":"T","number":null,"words":[{"id":50,"dir":"D","index":4}]},null,{"letter":"T","number":null,"words":[{"id":33,"dir":"D","index":7}]},null,null,null,null,null,null,{"letter":"C","number":60,"words":[{"id":51,"dir":"D","index":0}]},null,{"letter":"L","number":null,"words":[{"id":1,"dir":"D","index":16}]},null,{"letter":"G","number":null,"words":[{"id":5,"dir":"D","index":11}]},null,null,{"letter":"B","number":null,"words":[{"id":4,"dir":"D","index":11}]},null,null,null,{"letter":"E","number":null,"words":[{"id":7,"dir":"D","index":10}]},null,{"letter":"L","number":null,"words":[{"id":15,"dir":"D","index":10}]},null,null,null,null,null,null,null,null],[null,{"letter":"K","number":null,"words":[{"id":47,"dir":"D","index":3}]},null,null,{"letter":"A","number":null,"words":[{"id":50,"dir":"D","index":5}]},null,{"letter":"O","number":null,"words":[{"id":33,"dir":"D","index":8}]},null,null,null,null,{"letter":"B","number":61,"words":[{"id":64,"dir":"D","index":0}]},null,{"letter":"H","number":null,"words":[{"id":51,"dir":"D","index":1}]},null,{"letter":"S","number":62,"words":[{"id":1,"dir":"D","index":17},{"id":37,"dir":"A","index":0}]},{"letter":"H","number":null,"words":[{"id":37,"dir":"A","index":1}]},{"letter":"E","number":null,"words":[{"id":5,"dir":"D","index":12},{"id":37,"dir":"A","index":2}]},{"letter":"E","number":null,"words":[{"id":37,"dir":"A","index":3}]},{"letter":"T","number":null,"words":[{"id":37,"dir":"A","index":4}]},{"letter":"I","number":null,"words":[{"id":4,"dir":"D","index":12},{"id":37,"dir":"A","index":5}]},{"letter":"N","number":null,"words":[{"id":37,"dir":"A","index":6}]},{"letter":"G","number":null,"words":[{"id":37,"dir":"A","index":7}]},null,{"letter":"R","number":null,"words":[{"id":7,"dir":"D","index":11}]},null,null,null,null,null,null,null,null,null,null],[null,{"letter":"E","number":null,"words":[{"id":47,"dir":"D","index":4}]},null,null,{"letter":"M","number":null,"words":[{"id":50,"dir":"D","index":6}]},null,{"letter":"R","number":null,"words":[{"id":33,"dir":"D","index":9}]},null,null,{"letter":"G","number":63,"words":[{"id":61,"dir":"A","index":0}]},{"letter":"L","number":null,"words":[{"id":61,"dir":"A","index":1}]},{"letter":"O","number":null,"words":[{"id":61,"dir":"A","index":2},{"id":64,"dir":"D","index":1}]},{"letter":"B","number":null,"words":[{"id":61,"dir":"A","index":3}]},{"letter":"E","number":null,"words":[{"id":51,"dir":"D","index":2},{"id":61,"dir":"A","index":4}]},null,null,null,null,null,null,{"letter":"N","number":null,"words":[{"id":4,"dir":"D","index":13}]},null,null,null,{"letter":"S","number":64,"words":[{"id":7,"dir":"D","index":12},{"id":49,"dir":"A","index":0}]},{"letter":"T","number":null,"words":[{"id":49,"dir":"A","index":1}]},{"letter":"R","number":null,"words":[{"id":49,"dir":"A","index":2}]},{"letter":"O","number":null,"words":[{"id":49,"dir":"A","index":3}]},{"letter":"K","number":null,"words":[{"id":49,"dir":"A","index":4}]},{"letter":"I","number":null,"words":[{"id":49,"dir":"A","index":5}]},{"letter":"N","number":null,"words":[{"id":49,"dir":"A","index":6}]},{"letter":"G","number":null,"words":[{"id":49,"dir":"A","index":7}]},null,null,null],[null,{"letter":"D","number":null,"words":[{"id":47,"dir":"D","index":5}]},null,null,null,null,null,null,null,null,null,{"letter":"D","number":null,"words":[{"id":64,"dir":"D","index":2}]},null,{"letter":"C","number":65,"words":[{"id":24,"dir":"A","index":0},{"id":51,"dir":"D","index":3}]},{"letter":"L","number":null,"words":[{"id":24,"dir":"A","index":1}]},{"letter":"A","number":null,"words":[{"id":24,"dir":"A","index":2}]},{"letter":"R","number":null,"words":[{"id":24,"dir":"A","index":3}]},{"letter":"I","number":null,"words":[{"id":24,"dir":"A","index":4}]},{"letter":"F","number":null,"words":[{"id":24,"dir":"A","index":5}]},{"letter":"I","number":null,"words":[{"id":24,"dir":"A","index":6}]},{"letter":"E","number":null,"words":[{"id":4,"dir":"D","index":14},{"id":24,"dir":"A","index":7}]},{"letter":"R","number":null,"words":[{"id":24,"dir":"A","index":8}]},null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,{"letter":"Y","number":null,"words":[{"id":64,"dir":"D","index":3}]},null,{"letter":"K","number":null,"words":[{"id":51,"dir":"D","index":4}]},null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]],"words":[{"id":0,"number":39,"dir":"A","row":20,"col":7,"len":19,"answer":"THERMALCONDUCTIVITY","clue":"The heat transfer ability of a material","display":"THERMAL CONDUCTIVITY"},{"id":1,"number":33,"dir":"D","row":18,"col":15,"len":18,"answer":"BIOPHARMACEUTICALS","clue":"Manufactured using living cells and metabolic processes","display":"BIOPHARMACEUTICALS"},{"id":2,"number":48,"dir":"A","row":24,"col":14,"len":15,"answer":"PROPYLENEGLYCOL","clue":"Commonly used food-grade antifreeze in applications with colder required process temperatures","display":"PROPYLENE GLYCOL"},{"id":3,"number":32,"dir":"D","row":18,"col":12,"len":15,"answer":"STANDARDIZATION","clue":"Process that regulates the fat and protein content of cheese milk","display":"STANDARDIZATION"},{"id":4,"number":45,"dir":"D","row":23,"col":20,"len":15,"answer":"VERTICALTURBINE","clue":"A _____ pump is a specialized centrifugal pump that moves water from deep underground sources like wells or reservoirs","display":"VERTICAL TURBINE"},{"id":5,"number":44,"dir":"D","row":23,"col":17,"len":13,"answer":"SPRAYCOVERAGE","clue":"Type of test used to ensure spray devices are working properly","display":"SPRAY COVERAGE"},{"id":6,"number":40,"dir":"D","row":20,"col":9,"len":14,"answer":"ETHYLENEGLYCOL","clue":"The most common antifreeze additive that is used in automobile engine coolant systems","display":"ETHYLENE GLYCOL"},{"id":7,"number":49,"dir":"D","row":24,"col":24,"len":13,"answer":"LOOPEDHEADERS","clue":"Allows transfer panels to make multiple connections at the same time","display":"LOOPED HEADERS"},{"id":8,"number":46,"dir":"D","row":23,"col":22,"len":11,"answer":"PENCILSDOWN","clue":"We are no longer billing hours to this project","display":"PENCILS DOWN"},{"id":9,"number":16,"dir":"D","row":10,"col":18,"len":13,"answer":"LEGALHOLDTUBE","clue":"In pasteurization, a pipe of suitable length for the product to pass from one end to the other for the desired amount of time","display":"LEGAL HOLD TUBE"},{"id":10,"number":20,"dir":"A","row":13,"col":17,"len":11,"answer":"PASSIVATION","clue":"Method of removing oil from silos","display":"PASSIVATION"},{"id":11,"number":27,"dir":"A","row":16,"col":13,"len":12,"answer":"JACKSONVILLE","clue":"Haskell Headquarters Location","display":"JACKSONVILLE"},{"id":12,"number":34,"dir":"A","row":18,"col":18,"len":10,"answer":"DOORFOAMER","clue":"Applies a sanitizing foam at the entrance to reduce cross-contamination in a facility","display":"DOOR FOAMER"},{"id":13,"number":15,"dir":"A","row":10,"col":16,"len":13,"answer":"BOLDSANSSERIF","clue":"The font of Haskell\u2019s primary logo, described as strong and unpretentious in Haskell\u2019s website","display":"BOLD SANS SERIF"},{"id":14,"number":26,"dir":"D","row":16,"col":7,"len":10,"answer":"AUDITBOARD","clue":"Software used for Quality Implementation Plans (QIPs)","display":"AUDITBOARD"},{"id":15,"number":50,"dir":"D","row":24,"col":26,"len":11,"answer":"CENTRIFUGAL","clue":"The most commonly used type of pump at Haskell","display":"CENTRIFUGAL"},{"id":16,"number":8,"dir":"D","row":6,"col":14,"len":12,"answer":"SPECIFICHEAT","clue":"The heat holding capacity of a material","display":"SPECIFIC HEAT"},{"id":17,"number":7,"dir":"A","row":6,"col":12,"len":10,"answer":"AUSTENITIC","clue":"Non-magnetic class of stainless steel","display":"AUSTENITIC"},{"id":18,"number":19,"dir":"A","row":12,"col":5,"len":11,"answer":"HYDROSTATIC","clue":"Pressure on the bottom of the tank that comes from the liquid inside","display":"HYDROSTATIC"},{"id":19,"number":41,"dir":"D","row":20,"col":28,"len":10,"answer":"INSULATION","clue":"Typical requirement of cold system piping for both energy conservation and condensation control","display":"INSULATION"},{"id":20,"number":12,"dir":"A","row":8,"col":13,"len":10,"answer":"SEIBERLING","clue":"Beloit-based engineering firm acquired by Haskell","display":"SEIBERLING"},{"id":21,"number":43,"dir":"A","row":22,"col":23,"len":9,"answer":"VISCOSITY","clue":"Fluid property that impacts the friction in a piping system","display":"VISCOSITY"},{"id":22,"number":35,"dir":"D","row":18,"col":30,"len":12,"answer":"SIGHTGLASSES","clue":"Allow for operators to confirm content levels against sensors and troubleshoot","display":"SIGHT GLASSES"},{"id":23,"number":9,"dir":"D","row":7,"col":11,"len":10,"answer":"STEAMTRAPS","clue":"Used to expel condensate, as well as air and other gasses, out of the system, allowing steam to reach its destination as dry as possible","display":"STEAM TRAPS"},{"id":24,"number":65,"dir":"A","row":37,"col":13,"len":9,"answer":"CLARIFIER","clue":"A centrifugal machine installed on the raw side of the HTST system to remove extraneous matter prior to homogenization","display":"CLARIFIER"},{"id":25,"number":10,"dir":"D","row":7,"col":25,"len":8,"answer":"EUTECTIC","clue":"Temperature at which the solution starts to freeze","display":"EUTECTIC"},{"id":26,"number":47,"dir":"A","row":24,"col":0,"len":8,"answer":"ACTUATOR","clue":"The component that converts signal into mechanical motion, driving valve movement","display":"ACTUATOR"},{"id":27,"number":38,"dir":"D","row":20,"col":4,"len":8,"answer":"ELEVATOR","clue":"The lower seat of a mix-proof valve is prone to the ______ effect","display":"ELEVATOR"},{"id":28,"number":37,"dir":"D","row":20,"col":2,"len":10,"answer":"HEATTRACED","clue":"With cold climates, piping smaller than 2\u201d should always be ____ _____, since the probability of freezing is very high","display":"HEAT TRACED"},{"id":29,"number":42,"dir":"D","row":21,"col":0,"len":9,"answer":"ALFALAVAL","clue":"Popular valve manufacturer","display":"ALFA LAVAL"},{"id":30,"number":6,"dir":"D","row":6,"col":9,"len":10,"answer":"PAPERDOLLS","clue":"An equipment drawing used to ease discussion of logistics with client management or other disciplines","display":"PAPER DOLLS"},{"id":31,"number":30,"dir":"A","row":17,"col":0,"len":9,"answer":"PETROLEUM","clue":"What the \u201cP\u201d in API stands for","display":"PETROLEUM"},{"id":32,"number":59,"dir":"A","row":32,"col":1,"len":10,"answer":"CAVITATION","clue":"Happens to a pump when the NPSH available is less than the NPSH required","display":"CAVITATION"},{"id":33,"number":55,"dir":"D","row":27,"col":6,"len":10,"answer":"FLOWFACTOR","clue":"The metric equivalent of the flow coefficient","display":"FLOW FACTOR"},{"id":34,"number":58,"dir":"A","row":31,"col":24,"len":7,"answer":"EDUCTOR","clue":"This pump is composed of a nozzle that increases the momentum of the liquid and creates a vacuum and a tube that draws in and mixes more liquid into the flow","display":"EDUCTOR"},{"id":35,"number":17,"dir":"D","row":11,"col":3,"len":9,"answer":"JOHNPERRY","clue":"A flat face fitting used in the dairy and beverage industry, meets or exceeds 3-A standards","display":"JOHN PERRY"},{"id":36,"number":1,"dir":"D","row":0,"col":16,"len":7,"answer":"ORIFICE","clue":"These plates can be added to a section of piping as a relatively simple way to induce pressure drop or reduce flow in a system","display":"ORIFICE"},{"id":37,"number":62,"dir":"A","row":35,"col":15,"len":8,"answer":"SHEETING","clue":"The ideal way a fluid flows down on the internal faces of silos during CIP operations to ensure proper cleaning","display":"SHEETING"},{"id":38,"number":2,"dir":"A","row":1,"col":16,"len":6,"answer":"RENNET","clue":"Enzyme that serves as a means for curdling to occur","display":"RENNET"},{"id":39,"number":4,"dir":"A","row":4,"col":11,"len":7,"answer":"AMMONIA","clue":"Common utility used in the propylene glycol cooling system","display":"AMMONIA"},{"id":40,"number":18,"dir":"D","row":12,"col":1,"len":7,"answer":"SPARGER","clue":"Equipment used for incorporating a gas into a liquid","display":"SPARGER"},{"id":41,"number":13,"dir":"A","row":8,"col":24,"len":7,"answer":"FUNNELS","clue":"Valve ____ are used to capture any fluid that comes out of the vent cavity and send it to the drain","display":"FUNNELS"},{"id":42,"number":11,"dir":"A","row":8,"col":1,"len":9,"answer":"FLATONTOP","clue":"All pumps should have an intake piping reducer that is ___-____-___, so air cannot be trapped and then enter the pump as a slug of compressible fluid","display":"FLAT ON TOP"},{"id":43,"number":36,"dir":"A","row":19,"col":29,"len":6,"answer":"LINEAR","clue":"This type of flow is preferred for applications with a relatively constant pressure drop","display":"LINEAR"},{"id":44,"number":29,"dir":"D","row":16,"col":34,"len":9,"answer":"DYSRUPTEK","clue":"A brand of Haskell that identifies strategic investments in early stage technology companies with solutions to address the major challenges facing the AEC industry","display":"DYSRUPTEK"},{"id":45,"number":56,"dir":"A","row":29,"col":5,"len":6,"answer":"DOUBLE","clue":"Pumps that move liquids, such as high sugar solids, should have ____ mechanical seals with a water flush to keep the sugar from crystallizing on the face of the seal","display":"DOUBLE"},{"id":46,"number":24,"dir":"D","row":14,"col":32,"len":7,"answer":"LIPASES","clue":"Enzymes that degrade or breakdown fats","display":"LIPASES"},{"id":47,"number":59,"dir":"D","row":32,"col":1,"len":6,"answer":"CHOKED","clue":"Condition where a valve cannot pass additional flow, regardless of increases in inlet pressure","display":"CHOKED"},{"id":48,"number":21,"dir":"A","row":14,"col":1,"len":7,"answer":"ANNATTO","clue":"The most common cheese coloring agent","display":"ANNATTO"},{"id":49,"number":64,"dir":"A","row":36,"col":24,"len":8,"answer":"STROKING","clue":"Chemical dosing","display":"STROKING"},{"id":50,"number":57,"dir":"D","row":30,"col":4,"len":7,"answer":"FRISTAM","clue":"Popular pump manufacturer","display":"FRISTAM"},{"id":51,"number":60,"dir":"D","row":34,"col":13,"len":5,"answer":"CHECK","clue":"Having a ___ valve before a mix-proof valve may result in the mix-proof valve becoming hydraulically locked","display":"CHECK"},{"id":52,"number":23,"dir":"A","row":14,"col":29,"len":6,"answer":"ROLLER","clue":"Peristaltic pumps are also called ____ pumps","display":"ROLLER"},{"id":53,"number":5,"dir":"A","row":6,"col":2,"len":8,"answer":"TRICLAMP","clue":"The most common connection with transfer panels","display":"TRI-CLAMP"},{"id":54,"number":3,"dir":"D","row":2,"col":27,"len":7,"answer":"PRESTON","clue":"Haskell\u2019s founder, first name","display":"PRESTON"},{"id":55,"number":25,"dir":"D","row":15,"col":26,"len":5,"answer":"REGEN","clue":"Section of an HTST","display":"REGEN"},{"id":56,"number":31,"dir":"A","row":18,"col":9,"len":4,"answer":"FATS","clue":"Used to verify functionality before shipping the equipment to the field (abbr.)","display":"FATS"},{"id":57,"number":22,"dir":"D","row":14,"col":16,"len":4,"answer":"YOKE","clue":"The distance between the valve and an actuator","display":"YOKE"},{"id":58,"number":53,"dir":"A","row":26,"col":30,"len":5,"answer":"SCREW","clue":"This type of positive displacement pump uses screws that intermesh to pressurize fluids and move them through the system","display":"SCREW"},{"id":59,"number":54,"dir":"D","row":26,"col":32,"len":6,"answer":"RADIAL","clue":"A near leakage free seal that tends to erode faster","display":"RADIAL"},{"id":60,"number":28,"dir":"A","row":16,"col":26,"len":4,"answer":"EPDM","clue":"Common seal material","display":"EPDM"},{"id":61,"number":63,"dir":"A","row":36,"col":9,"len":5,"answer":"GLOBE","clue":"Type of control valve that is used for non-sanitary applications, like utilities","display":"GLOBE"},{"id":62,"number":51,"dir":"A","row":26,"col":11,"len":3,"answer":"SIP","clue":"Performed after CIP to remove any residue and kill microbes in worst case scenarios","display":"SIP"},{"id":63,"number":52,"dir":"A","row":26,"col":26,"len":3,"answer":"NPT","clue":"Tapered threaded connections where one end is inserted into another and screwed into place","display":"NPT"},{"id":64,"number":61,"dir":"D","row":35,"col":11,"len":4,"answer":"BODY","clue":"The part of the valve that houses internal flow components","display":"BODY"},{"id":65,"number":14,"dir":"D","row":10,"col":7,"len":3,"answer":"VFD","clue":"Pumps are selected for ____ control when their operating conditions and load profile make speed-based control more efficient and beneficial than traditional valve throttling","display":"VFD"}]}
+</script>
+<script>
+(function(){
+  const DATA = JSON.parse(document.getElementById('puzzle-data').textContent);
+  const rows = DATA.rows, cols = DATA.cols, cells = DATA.cells, words = DATA.words;
+
+  const wordsById = {};
+  words.forEach(w => wordsById[w.id] = w);
+
+  const acrossWords = words.filter(w => w.dir === 'A').sort((a,b)=>a.number-b.number);
+  const downWords = words.filter(w => w.dir === 'D').sort((a,b)=>a.number-b.number);
+
+  document.getElementById('stamp-count').textContent = words.length;
+
+  let cellSize = 26;
+  let curDir = 'A';
+  let curWordId = null;
+  let curR = null, curC = null;
+
+  const gridEl = document.getElementById('grid');
+  const gridScroll = document.getElementById('gridScroll');
+  gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--cs))`;
+  gridEl.style.gridTemplateRows = `repeat(${rows}, var(--cs))`;
+
+  function applyCellSize(){
+    document.documentElement.style.setProperty('--cs', cellSize + 'px');
+  }
+  applyCellSize();
+
+  // build DOM cells
+  const inputRefs = {}; // "r_c" -> input element
+  const cellRefs = {};  // "r_c" -> cell div
+
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const cellData = cells[r][c];
+      const div = document.createElement('div');
+      div.className = 'cell' + (cellData ? ' filled' : ' blocked');
+      if(cellData){
+        if(cellData.number){
+          const num = document.createElement('div');
+          num.className = 'num';
+          num.textContent = cellData.number;
+          div.appendChild(num);
+        }
+        const input = document.createElement('input');
+        input.maxLength = 1;
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.dataset.r = r;
+        input.dataset.c = c;
+        div.appendChild(input);
+        inputRefs[r+'_'+c] = input;
+
+        input.addEventListener('focus', () => selectCell(r, c, null));
+        input.addEventListener('keydown', (e) => handleKeydown(e, r, c));
+        input.addEventListener('input', (e) => handleInput(e, r, c));
+        input.addEventListener('click', () => {
+          if(curR === r && curC === c){
+            toggleDirection(r, c);
+          } else {
+            selectCell(r, c, null);
+          }
+        });
+      }
+      cellRefs[r+'_'+c] = div;
+      gridEl.appendChild(div);
+    }
+  }
+
+  function wordsAt(r,c){
+    const cd = cells[r][c];
+    if(!cd) return [];
+    return cd.words;
+  }
+
+  function toggleDirection(r,c){
+    const ws = wordsAt(r,c);
+    if(ws.length < 2) return;
+    curDir = (curDir === 'A') ? 'D' : 'A';
+    const match = ws.find(w => w.dir === curDir);
+    if(match) curWordId = match.id;
+    render();
+  }
+
+  function selectCell(r, c, forceDir){
+    const ws = wordsAt(r,c);
+    if(ws.length === 0) return;
+    curR = r; curC = c;
+    let dir = forceDir;
+    if(!dir){
+      dir = ws.find(w => w.dir === curDir) ? curDir : ws[0].dir;
+    }
+    curDir = dir;
+    const match = ws.find(w => w.dir === curDir) || ws[0];
+    curWordId = match.id;
+    render();
+    const inp = inputRefs[r+'_'+c];
+    if(inp) inp.focus({preventScroll:true});
+  }
+
+  function selectWord(wordId){
+    const w = wordsById[wordId];
+    curWordId = wordId;
+    curDir = w.dir;
+    curR = w.row; curC = w.col;
+    render();
+    const inp = inputRefs[curR+'_'+curC];
+    if(inp) inp.focus({preventScroll:true});
+    scrollWordIntoView(w);
+  }
+
+  function scrollWordIntoView(w){
+    const cellDiv = cellRefs[w.row+'_'+w.col];
+    if(cellDiv) cellDiv.scrollIntoView({block:'center', inline:'center', behavior:'smooth'});
+  }
+
+  function nextCellInWord(r,c,dir,step){
+    const w = wordsById[curWordId];
+    const dr = dir==='A'?0:1, dc = dir==='A'?1:0;
+    let idx = (dir==='A') ? (c - w.col) : (r - w.row);
+    idx += step;
+    if(idx < 0 || idx >= w.len) return null;
+    return { r: w.row + dr*idx, c: w.col + dc*idx };
+  }
+
+  function handleInput(e, r, c){
+    let val = e.target.value.toUpperCase().replace(/[^A-Z]/g,'');
+    val = val.slice(-1);
+    e.target.value = val;
+    if(val){
+      const cd = cells[r][c];
+      cd._entered = val;
+      const nxt = nextCellInWord(r,c,curDir,1);
+      updateCellStatusVisual(r,c);
+      if(nxt){
+        selectCell(nxt.r, nxt.c, curDir);
+      } else {
+        render();
+      }
+    }
+    updateProgress();
+  }
+
+  function handleKeydown(e, r, c){
+    const key = e.key;
+    if(key === 'ArrowRight'){ e.preventDefault(); moveDir(r,c,0,1); }
+    else if(key === 'ArrowLeft'){ e.preventDefault(); moveDir(r,c,0,-1); }
+    else if(key === 'ArrowDown'){ e.preventDefault(); moveDir(r,c,1,0); }
+    else if(key === 'ArrowUp'){ e.preventDefault(); moveDir(r,c,-1,0); }
+    else if(key === 'Backspace'){
+      const cd = cells[r][c];
+      if(!cd._entered){
+        const prev = nextCellInWord(r,c,curDir,-1);
+        if(prev){
+          e.preventDefault();
+          selectCell(prev.r, prev.c, curDir);
+          const cd2 = cells[prev.r][prev.c];
+          cd2._entered = '';
+          const inp2 = inputRefs[prev.r+'_'+prev.c];
+          if(inp2) inp2.value = '';
+          updateProgress();
+        }
+      } else {
+        cd._entered = '';
+      }
+    }
+    else if(key === 'Tab'){
+      e.preventDefault();
+      toggleDirection(r,c);
+    }
+  }
+
+  function moveDir(r,c,dr,dc){
+    let nr = r+dr, nc = c+dc;
+    while(nr>=0 && nr<rows && nc>=0 && nc<cols){
+      if(cells[nr][nc]){
+        const forceDir = (dr===0) ? 'A' : (dc===0 ? 'D' : null);
+        selectCell(nr, nc, forceDir);
+        return;
+      }
+      nr+=dr; nc+=dc;
+    }
+  }
+
+  function updateCellStatusVisual(r,c){
+    // clear stale correctness classes when user edits
+    const div = cellRefs[r+'_'+c];
+    div.classList.remove('correct','incorrect');
+  }
+
+  function render(){
+    // clear all active/inword classes
+    for(const key in cellRefs){
+      cellRefs[key].classList.remove('active','inword');
+    }
+    if(curWordId == null) return;
+    const w = wordsById[curWordId];
+    const dr = w.dir==='A'?0:1, dc = w.dir==='A'?1:0;
+    for(let i=0;i<w.len;i++){
+      const rr = w.row+dr*i, cc = w.col+dc*i;
+      const div = cellRefs[rr+'_'+cc];
+      if(div) div.classList.add('inword');
+    }
+    const activeDiv = cellRefs[curR+'_'+curC];
+    if(activeDiv) activeDiv.classList.add('active');
+
+    // active clue box
+    const box = document.getElementById('activeClue');
+    box.innerHTML = `<span class="dirtag">${w.dir==='A'?'ACROSS':'DOWN'}</span><span class="num">${w.number}.</span>${escapeHtml(w.clue)}`;
+
+    // clue list highlight
+    document.querySelectorAll('.clue-item').forEach(el => el.classList.remove('active'));
+    const activeEl = document.getElementById('clue-'+w.id);
+    if(activeEl){
+      activeEl.classList.add('active');
+      activeEl.scrollIntoView({block:'nearest'});
+    }
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function buildClueList(list, containerId){
+    const container = document.getElementById(containerId);
+    list.forEach(w => {
+      const item = document.createElement('div');
+      item.className = 'clue-item';
+      item.id = 'clue-' + w.id;
+      item.innerHTML = `<span class="n">${w.number}</span><span>${escapeHtml(w.clue)}</span>`;
+      item.addEventListener('click', () => selectWord(w.id));
+      container.appendChild(item);
+    });
+  }
+  buildClueList(acrossWords, 'acrossList');
+  buildClueList(downWords, 'downList');
+
+  function isWordComplete(w){
+    const dr = w.dir==='A'?0:1, dc = w.dir==='A'?1:0;
+    for(let i=0;i<w.len;i++){
+      const rr=w.row+dr*i, cc=w.col+dc*i;
+      const cd = cells[rr][cc];
+      if(!cd._entered) return false;
+    }
+    return true;
+  }
+  function isWordCorrect(w){
+    const dr = w.dir==='A'?0:1, dc = w.dir==='A'?1:0;
+    for(let i=0;i<w.len;i++){
+      const rr=w.row+dr*i, cc=w.col+dc*i;
+      const cd = cells[rr][cc];
+      if((cd._entered||'') !== w.answer[i]) return false;
+    }
+    return true;
+  }
+
+  function updateProgress(){
+    let done = 0;
+    words.forEach(w => {
+      const complete = isWordComplete(w);
+      const el = document.getElementById('clue-'+w.id);
+      if(el){
+        if(complete && isWordCorrect(w)) el.classList.add('done');
+        else el.classList.remove('done');
+      }
+      if(complete && isWordCorrect(w)) done++;
+    });
+    document.getElementById('progFill').style.width = (done/words.length*100) + '%';
+    document.getElementById('progText').textContent = `${done} / ${words.length}`;
+    const banner = document.getElementById('winBanner');
+    if(done === words.length){
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+
+  // Buttons
+  document.getElementById('btnCheck').addEventListener('click', () => {
+    if(curWordId == null) return;
+    const w = wordsById[curWordId];
+    const dr = w.dir==='A'?0:1, dc = w.dir==='A'?1:0;
+    for(let i=0;i<w.len;i++){
+      const rr=w.row+dr*i, cc=w.col+dc*i;
+      const cd = cells[rr][cc];
+      const div = cellRefs[rr+'_'+cc];
+      div.classList.remove('correct','incorrect');
+      if(cd._entered){
+        div.classList.add(cd._entered === w.answer[i] ? 'correct' : 'incorrect');
+      }
+    }
+  });
+
+  document.getElementById('btnCheckAll').addEventListener('click', () => {
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cd = cells[r][c];
+        if(!cd) continue;
+        const div = cellRefs[r+'_'+c];
+        div.classList.remove('correct','incorrect');
+        if(cd._entered){
+          div.classList.add(cd._entered === cd.letter ? 'correct' : 'incorrect');
+        }
+      }
+    }
+  });
+
+  document.getElementById('btnReveal').addEventListener('click', () => {
+    if(curWordId == null) return;
+    const w = wordsById[curWordId];
+    const dr = w.dir==='A'?0:1, dc = w.dir==='A'?1:0;
+    for(let i=0;i<w.len;i++){
+      const rr=w.row+dr*i, cc=w.col+dc*i;
+      const cd = cells[rr][cc];
+      cd._entered = w.answer[i];
+      const inp = inputRefs[rr+'_'+cc];
+      if(inp) inp.value = w.answer[i];
+      const div = cellRefs[rr+'_'+cc];
+      div.classList.remove('incorrect');
+      div.classList.add('correct');
+    }
+    updateProgress();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', () => {
+    if(!confirm('Clear the entire grid?')) return;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const cd = cells[r][c];
+        if(!cd) continue;
+        cd._entered = '';
+        const inp = inputRefs[r+'_'+c];
+        if(inp) inp.value = '';
+        const div = cellRefs[r+'_'+c];
+        div.classList.remove('correct','incorrect');
+      }
+    }
+    updateProgress();
+  });
+
+  document.getElementById('zoomIn').addEventListener('click', () => {
+    cellSize = Math.min(40, cellSize + 4);
+    applyCellSize();
+  });
+  document.getElementById('zoomOut').addEventListener('click', () => {
+    cellSize = Math.max(16, cellSize - 4);
+    applyCellSize();
+  });
+
+  // init entered values
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const cd = cells[r][c];
+      if(cd) cd._entered = '';
+    }
+  }
+
+  // select first word by default
+  if(acrossWords.length){
+    selectWord(acrossWords[0].id);
+  }
+  updateProgress();
+
+  // responsive default zoom for small screens
+  if(window.innerWidth < 640){
+    cellSize = 20;
+    applyCellSize();
+  }
+})();
+
+</script>
+</body>
+</html>
